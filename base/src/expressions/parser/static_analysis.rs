@@ -3,6 +3,8 @@ use crate::functions::Function;
 use super::Node;
 
 use regex::Regex;
+#[cfg(feature = "use_regex_lite")]
+use regex_lite as regex;
 use std::sync::OnceLock;
 
 static RANGE_REFERENCE_REGEX: OnceLock<Regex> = OnceLock::new();
