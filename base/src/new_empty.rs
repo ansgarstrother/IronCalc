@@ -414,8 +414,7 @@ impl<'a> Model<'a> {
         };
 
         let milliseconds = evaluation_environment.milliseconds_since_epoch();
-        let seconds = milliseconds / 1000;
-        let dt = match DateTime::from_timestamp(seconds, 0) {
+        let dt = match DateTime::from_timestamp_millis(milliseconds) {
             Some(s) => s,
             None => return Err(format!("Invalid timestamp: {milliseconds}")),
         };

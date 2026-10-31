@@ -234,3 +234,34 @@ fn ordinary_interactive_models_remain_ambient() {
     actual.evaluate();
     assert!((0.0..1.0).contains(&number(&actual, "A1")));
 }
+
+#[test]
+fn negative_subsecond_timestamps_use_the_containing_second() {
+    for (milliseconds, second, timestamp) in [
+        (-1, 59, "1969-12-31T23:59:59Z"),
+        (-999, 59, "1969-12-31T23:59:59Z"),
+        (-1000, 59, "1969-12-31T23:59:59Z"),
+        (-1001, 58, "1969-12-31T23:59:58Z"),
+    ] {
+        let context = FrozenEvaluationContext::new(milliseconds, [7; 32]).unwrap();
+        let mut actual =
+            Model::new_empty_with_frozen_context("before-epoch", "en", "UTC", "en", context)
+                .unwrap();
+        assert_eq!(actual.evaluation_timestamp_millis(), milliseconds);
+        assert_eq!(actual.workbook.metadata.created, timestamp);
+        assert_eq!(actual.workbook.metadata.last_modified, timestamp);
+        actual._set("A1", "=NOW()");
+        actual._set("A2", "=TODAY()");
+        actual._set("A3", "=NOW(\"America/New_York\")");
+        actual.evaluate_frozen().unwrap();
+        assert_eq!(
+            number(&actual, "A1"),
+            25_568.0 + (86_340.0 + f64::from(second)) / 86_400.0
+        );
+        assert_eq!(number(&actual, "A2"), 25_568.0);
+        assert_eq!(
+            number(&actual, "A3"),
+            25_568.0 + (68_340.0 + f64::from(second)) / 86_400.0
+        );
+    }
+}

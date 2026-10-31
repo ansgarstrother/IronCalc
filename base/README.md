@@ -51,7 +51,8 @@ Model::from_bytes_with_frozen_context, then call evaluate_frozen.
     model.evaluate_frozen()?;
 
 NOW and TODAY use the supplied clock with the existing timezone and second
-precision rules. RAND and RANDBETWEEN draw from a versioned SHA-256 stream keyed
+precision rules, flooring pre-epoch timestamps to their containing second.
+RAND and RANDBETWEEN draw from a versioned SHA-256 stream keyed
 by seed, cell coordinates, and that cell's executed draw index. A new evaluation
 pass resets the streams; lazy branches and cached references keep the ordinary
 engine semantics. Existing interactive constructors continue to use ambient

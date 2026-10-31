@@ -781,8 +781,7 @@ impl<'a> Model<'a> {
     // Returns the current date/time as an Excel serial number in the given timezone.
     // Used by TODAY() and NOW().
     pub(crate) fn current_excel_serial_with_timezone(&self, tz: Tz) -> Option<f64> {
-        let seconds = self.evaluation_timestamp_millis() / 1000;
-        DateTime::from_timestamp(seconds, 0).map(|dt| {
+        DateTime::from_timestamp_millis(self.evaluation_timestamp_millis()).map(|dt| {
             let local_time = dt.with_timezone(&tz);
             let days_from_1900 = local_time.num_days_from_ce() - EXCEL_DATE_BASE;
             let fraction = (local_time.num_seconds_from_midnight() as f64) / (60.0 * 60.0 * 24.0);

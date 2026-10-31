@@ -19,6 +19,8 @@ use crate::{
 /// sheet (u32), row and column (i32), and zero-based draw index (u64), all integers
 /// in big-endian order. The upper 53 bits of the first eight digest bytes are
 /// divided by 2^53. Streams reset on each complete evaluation pass.
+/// Time-based formulas and metadata use the containing UTC second, including
+/// floor toward the previous second for negative sub-second timestamps.
 ///
 /// This profile does not promise cross-platform equivalence for every numerical
 /// function or deterministic workbook serialization.

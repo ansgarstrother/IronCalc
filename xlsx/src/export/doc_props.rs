@@ -34,8 +34,7 @@ pub(crate) fn get_core_xml(workbook: &Workbook, milliseconds: i64) -> Result<Str
     let created = metadata.created.to_string();
     // FIXME add now
 
-    let seconds = milliseconds / 1000;
-    let dt = match DateTime::from_timestamp(seconds, 0) {
+    let dt = match DateTime::from_timestamp_millis(milliseconds) {
         Some(s) => s,
         None => return Err(XlsxError::Xml(format!("Invalid timestamp: {milliseconds}"))),
     };
