@@ -13,9 +13,10 @@ use crate::{
         },
         types::CellReferenceRC,
     },
+    frozen_evaluation::EvaluationEnvironment,
     language::{get_default_language, get_language},
     locale::{get_default_locale, get_locale},
-    model::{get_milliseconds_since_epoch, Model, ParsedDefinedName},
+    model::{Model, ParsedDefinedName},
     types::{
         DefinedName, Metadata, SheetState, Workbook, WorkbookSettings, WorkbookView, Worksheet,
         WorksheetView,
@@ -383,6 +384,22 @@ impl<'a> Model<'a> {
         timezone: &'a str,
         language_id: &'a str,
     ) -> Result<Model<'a>, String> {
+        Self::new_empty_with_environment(
+            name,
+            locale_id,
+            timezone,
+            language_id,
+            EvaluationEnvironment::Ambient,
+        )
+    }
+
+    pub(crate) fn new_empty_with_environment(
+        name: &'a str,
+        locale_id: &'a str,
+        timezone: &'a str,
+        language_id: &'a str,
+        evaluation_environment: EvaluationEnvironment,
+    ) -> Result<Model<'a>, String> {
         let tz: Tz = match &timezone.parse() {
             Ok(tz) => *tz,
             Err(_) => return Err(format!("Invalid timezone: {}", &timezone)),
@@ -396,7 +413,7 @@ impl<'a> Model<'a> {
             Err(_) => return Err(format!("Invalid language: {language_id}")),
         };
 
-        let milliseconds = get_milliseconds_since_epoch();
+        let milliseconds = evaluation_environment.milliseconds_since_epoch();
         let seconds = milliseconds / 1000;
         let dt = match DateTime::from_timestamp(seconds, 0) {
             Some(s) => s,
@@ -463,6 +480,8 @@ impl<'a> Model<'a> {
             language,
             tz,
             view_id: 0,
+            evaluation_environment,
+            frozen_evaluation_error: None,
         };
         model.parse_formulas();
         Ok(model)

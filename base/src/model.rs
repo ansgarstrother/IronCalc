@@ -22,6 +22,7 @@ use crate::{
         format::{format_number, parse_formatted_number},
         lexer::is_likely_date_number_format,
     },
+    frozen_evaluation::{EvaluationEnvironment, FrozenEvaluationError},
     functions::util::compare_values,
     implicit_intersection::implicit_intersection,
     language::{get_default_language, get_language, Language},
@@ -69,7 +70,7 @@ pub(crate) enum CellState {
     /// The cell has already been evaluated
     Evaluated,
     /// The cell is being evaluated
-    Evaluating,
+    Evaluating { random_draws: u64 },
 }
 
 /// A parsed formula for a defined name
@@ -136,6 +137,10 @@ pub struct Model<'a> {
     pub(crate) tz: Tz,
     /// The view id. A view consists of a selected sheet and ranges.
     pub(crate) view_id: u32,
+    /// Immutable volatile-evaluation environment, separate from workbook bytes.
+    pub(crate) evaluation_environment: EvaluationEnvironment,
+    /// First operational failure in the current complete evaluation pass.
+    pub(crate) frozen_evaluation_error: Option<FrozenEvaluationError>,
 }
 
 // FIXME: Maybe this should be the same as CellReference
@@ -821,7 +826,7 @@ impl<'a> Model<'a> {
                     cell_reference.column,
                 );
                 match self.cells.get(&key) {
-                    Some(CellState::Evaluating) => {
+                    Some(CellState::Evaluating { .. }) => {
                         return CalcResult::new_error(
                             Error::CIRC,
                             cell_reference,
@@ -833,7 +838,8 @@ impl<'a> Model<'a> {
                     }
                     _ => {
                         // mark cell as being evaluated
-                        self.cells.insert(key, CellState::Evaluating);
+                        self.cells
+                            .insert(key, CellState::Evaluating { random_draws: 0 });
                     }
                 }
                 let node = &self.parsed_formulas[cell_reference.sheet as usize][f as usize].clone();
@@ -903,6 +909,14 @@ impl<'a> Model<'a> {
     /// # }
     /// ```
     pub fn from_workbook(workbook: Workbook, language_id: &str) -> Result<Model<'_>, String> {
+        Self::from_workbook_with_environment(workbook, language_id, EvaluationEnvironment::Ambient)
+    }
+
+    pub(crate) fn from_workbook_with_environment(
+        workbook: Workbook,
+        language_id: &str,
+        evaluation_environment: EvaluationEnvironment,
+    ) -> Result<Model<'_>, String> {
         let parsed_formulas = Vec::new();
         let worksheets = &workbook.worksheets;
 
@@ -955,6 +969,8 @@ impl<'a> Model<'a> {
             locale,
             tz,
             view_id: 0,
+            evaluation_environment,
+            frozen_evaluation_error: None,
         };
 
         model.parse_formulas();
@@ -1886,6 +1902,7 @@ impl<'a> Model<'a> {
     pub fn evaluate(&mut self) {
         // clear all computation artifacts
         self.cells.clear();
+        self.frozen_evaluation_error = None;
 
         let cells = self.get_all_cells();
 

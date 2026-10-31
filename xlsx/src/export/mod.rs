@@ -18,7 +18,7 @@ use std::{
 
 use ironcalc_base::expressions::utils::number_to_column;
 use ironcalc_base::types::Workbook;
-use ironcalc_base::{get_milliseconds_since_epoch, Model};
+use ironcalc_base::Model;
 
 use self::xml_constants::XML_DECLARATION;
 
@@ -86,7 +86,7 @@ pub fn save_xlsx_to_writer<W: Write + Seek>(model: &Model, writer: W) -> Result<
     zip.start_file("docProps/app.xml", options)?;
     zip.write_all(doc_props::get_app_xml(workbook).as_bytes())?;
     zip.start_file("docProps/core.xml", options)?;
-    let milliseconds = get_milliseconds_since_epoch();
+    let milliseconds = model.evaluation_timestamp_millis();
     zip.write_all(doc_props::get_core_xml(workbook, milliseconds)?.as_bytes())?;
 
     // Package-relationship item

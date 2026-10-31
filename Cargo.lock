@@ -573,6 +573,7 @@ dependencies = [
  "regex-lite",
  "ryu",
  "serde",
+ "sha2",
  "serde_json",
  "statrs",
 ]

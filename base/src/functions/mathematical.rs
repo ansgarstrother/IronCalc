@@ -10,11 +10,6 @@ use crate::{
 };
 use std::f64::consts::PI;
 
-#[cfg(not(target_arch = "wasm32"))]
-pub fn random() -> f64 {
-    rand::random()
-}
-
 // Euclidean gcd for i64 (non-negative inputs expected)
 fn gcd_i64(mut a: i64, mut b: i64) -> i64 {
     while b != 0 {
@@ -39,12 +34,6 @@ fn lcm_i64(a: i64, b: i64) -> Option<i64> {
     } else {
         Some(prod as i64)
     }
-}
-
-#[cfg(target_arch = "wasm32")]
-pub fn random() -> f64 {
-    use js_sys::Math;
-    Math::random()
 }
 
 impl<'a> Model<'a> {
@@ -1495,7 +1484,10 @@ impl<'a> Model<'a> {
         if !args.is_empty() {
             return CalcResult::new_args_number_error(cell);
         }
-        CalcResult::Number(random())
+        match self.next_random(cell) {
+            Ok(random) => CalcResult::Number(random),
+            Err(error) => error,
+        }
     }
 
     // TODO: Add tests for RANDBETWEEN
@@ -1518,7 +1510,10 @@ impl<'a> Model<'a> {
                 message: format!("{x}>{y}"),
             };
         }
-        CalcResult::Number((x + random() * (y - x)).floor())
+        match self.next_random(cell) {
+            Ok(random) => CalcResult::Number((x + random * (y - x)).floor()),
+            Err(error) => error,
+        }
     }
 
     pub(crate) fn fn_roman(&mut self, args: &[Node], cell: CellReferenceIndex) -> CalcResult {

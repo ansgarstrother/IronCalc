@@ -42,6 +42,7 @@ mod actions;
 mod arithmetic;
 mod cast;
 mod constants;
+mod frozen_evaluation;
 mod functions;
 mod implicit_intersection;
 mod model;
@@ -57,6 +58,9 @@ mod test;
 #[cfg(test)]
 pub mod mock_time;
 
+pub use frozen_evaluation::{
+    FrozenEvaluationContext, FrozenEvaluationError, FROZEN_EVALUATION_PROFILE,
+};
 pub use locale::get_supported_locales;
 pub use model::get_milliseconds_since_epoch;
 pub use model::FmtSettings;

@@ -86,7 +86,6 @@ use crate::expressions::types::CellReferenceIndex;
 use crate::formatter::dates::date_to_serial_number;
 use crate::formatter::dates::permissive_date_to_serial_number;
 use crate::formatter::dates::DATE_OUT_OF_RANGE_MESSAGE;
-use crate::model::get_milliseconds_since_epoch;
 use crate::number_format::to_precision;
 use crate::{
     calc_result::CalcResult,
@@ -782,7 +781,7 @@ impl<'a> Model<'a> {
     // Returns the current date/time as an Excel serial number in the given timezone.
     // Used by TODAY() and NOW().
     pub(crate) fn current_excel_serial_with_timezone(&self, tz: Tz) -> Option<f64> {
-        let seconds = get_milliseconds_since_epoch() / 1000;
+        let seconds = self.evaluation_timestamp_millis() / 1000;
         DateTime::from_timestamp(seconds, 0).map(|dt| {
             let local_time = dt.with_timezone(&tz);
             let days_from_1900 = local_time.num_days_from_ce() - EXCEL_DATE_BASE;
